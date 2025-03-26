@@ -1,0 +1,361 @@
+///// two colour at one time
+
+/**************************** Assign Pins ****************************************/
+// 🚦 Traffic Light Pins
+const int red1 = 2, yellow1 = 3, green1 = 4;  
+const int red2 = 5, yellow2 = 6, green2 = 7;  
+const int red3 = 8, yellow3 = 9, green3 = 10;  
+const int red4 = 11, yellow4 = 12, green4 = 13;  
+
+// 🌞 LDR Sensor Pin
+const int ldrPin = A0;
+int brightness = 0;  
+
+// 🛑 Interrupt Input Pins
+const int T1 = 18, T2 = 19, T3 = 20, T4 = 21;  
+
+// 🔢 7-Segment Display Pins
+const int segPins1[] = {22, 23, 24, 25, 26, 27, 28};  
+const int segPins2[] = {29, 30, 31, 32, 33, 34, 35};  
+const int segPins3[] = {36, 37, 38, 39, 40, 41, 42};  
+const int segPins4[] = {43, 44, 45, 46, 47, 48, 49};  
+
+// 🔢 Numbers for 7-Segment Display (Common Cathode)
+const byte numbers[] = {   
+  B0000000, // 0  
+  B0000110, // 1  
+  B1011011, // 2  
+  B1001111, // 3  
+  B1100110, // 4  
+  B1101101, // 5  
+  B1111101, // 6  
+  B0000111, // 7  
+  B1111111, // 8  
+  B1101111, // 9  
+  B1000000  // '-'  
+};
+
+// 🕒 Timer Variables
+unsigned long previousMillis = 0;
+const long interval = 1000;  
+
+// 🚨 Interrupt Control Variables
+volatile int interruptTraffic = 0;  
+volatile bool interruptFlag = false;  // Flag to indicate interrupt occurred
+
+// State Variables
+enum TrafficState { RED, GREEN, YELLOW };
+TrafficState currentState = RED;
+int currentTraffic = 1;  // Current traffic light being controlled
+
+/**************************** Setup ****************************************/
+void setup() {
+  Serial.begin(9600);
+
+  // 🌞 Set up LDR input
+  pinMode(ldrPin, INPUT);
+
+  // 🚦 Set up Traffic Light Pins
+  int trafficLights[] = {red1, yellow1, green1, red2, yellow2, green2, red3, yellow3, green3, red4, yellow4, green4};
+  for (int i = 0; i < 12; i++) {
+    pinMode(trafficLights[i], OUTPUT);
+    digitalWrite(trafficLights[i], LOW); // All lights off initially
+  }
+
+  // 🔢 Set up 7-Segment Display Pins
+  for (int i = 0; i < 7; i++) {
+    pinMode(segPins1[i], OUTPUT);
+    pinMode(segPins2[i], OUTPUT);
+    pinMode(segPins3[i], OUTPUT);
+    pinMode(segPins4[i], OUTPUT);
+  }
+
+  // 🛑 Set up Interrupt Input Pins (Default LOW)
+  pinMode(T1, INPUT);
+  pinMode(T2, INPUT);
+  pinMode(T3, INPUT);
+  pinMode(T4, INPUT);
+
+  // 🚀 Attach Interrupts (Trigger when LOW → HIGH)
+  attachInterrupt(digitalPinToInterrupt(T1), triggerTraffic1, RISING);
+  attachInterrupt(digitalPinToInterrupt(T2), triggerTraffic2, RISING);
+  attachInterrupt(digitalPinToInterrupt(T3), triggerTraffic3, RISING);
+  attachInterrupt(digitalPinToInterrupt(T4), triggerTraffic4, RISING);
+
+  // Initialize all traffic lights to RED
+  setAllLightsRed();
+}
+
+/****************************** Main Loop *********************************************/
+void loop() {
+  // Check if an interrupt occurred
+  if (interruptFlag) {
+    handleInterruptTraffic();  // Handle the interrupt logic
+    interruptFlag = false;     // Reset the flag
+  }
+
+  // 🌞 Update brightness based on LDR
+  updateBrightness();
+
+  // 🚦 Run normal traffic light cycles (non-blocking)
+  runTrafficLight();
+}
+
+/************************************* Interrupt Handlers ****************************************/
+void triggerTraffic1() { interruptTraffic = 1; interruptFlag = true; }
+void triggerTraffic2() { interruptTraffic = 2; interruptFlag = true; }
+void triggerTraffic3() { interruptTraffic = 3; interruptFlag = true; }
+void triggerTraffic4() { interruptTraffic = 4; interruptFlag = true; }
+
+/************************************* Handle Interrupt ****************************************/
+void handleInterruptTraffic() {
+  Serial.println("🚨 Interrupt Triggered! Changing Lights...");
+  updateBrightness();
+  // 🔍 Identify which traffic light is currently green
+  int currentGreenTraffic = currentTraffic;
+  if (currentState == RED) {
+    if (currentGreenTraffic == 1) {
+      countdown(segPins1, 0);
+    } else if (currentGreenTraffic == 2) {
+      countdown(segPins2, 0);
+    } else if (currentGreenTraffic == 3) {
+      countdown(segPins3, 0);
+    } else if (currentGreenTraffic == 4) {
+      countdown(segPins4, 0);
+    }
+  }
+if (currentState == YELLOW) {
+    if (currentGreenTraffic == 1) {
+      countdown(segPins1, 0);
+    } else if (currentGreenTraffic == 2) {
+      countdown(segPins2, 0);
+    } else if (currentGreenTraffic == 3) {
+      countdown(segPins3, 0);
+    } else if (currentGreenTraffic == 4) {
+      countdown(segPins4, 0);
+    }
+  }
+  // 🟡 If the current traffic light is green, turn it yellow for 3 seconds
+  if (currentState == GREEN) {
+    if (currentGreenTraffic == 1) {
+      setLight(green1, 0);
+      setLight(yellow1, brightness);
+      countdown(segPins1, 3);
+      setLight(yellow1, 0);
+    } else if (currentGreenTraffic == 2) {
+      setLight(green2, 0);
+      setLight(yellow2, brightness);
+      countdown(segPins2, 3);
+      setLight(yellow2, 0);
+    } else if (currentGreenTraffic == 3) {
+      setLight(green3, 0);
+      setLight(yellow3, brightness);
+      countdown(segPins3, 3);
+      setLight(yellow3, 0);
+    } else if (currentGreenTraffic == 4) {
+      setLight(green4, 0);
+      setLight(yellow4, brightness);
+      countdown(segPins4, 3);
+      setLight(yellow4, 0);
+    }
+  }
+
+  // 🔴 Turn the previous green light RED
+  setAllLightsRed();
+
+  // 🟢 Set the interrupted traffic light to GREEN
+  if (interruptTraffic == 1) {
+    setLight(red1, 0);
+    setLight(green1, brightness);
+    countdown(segPins1, 9);
+    setLight(green1, 0);
+  } else if (interruptTraffic == 2) {
+    setLight(red2, 0);
+    setLight(green2, brightness);
+    countdown(segPins2, 9);
+    setLight(green2, 0);
+  } else if (interruptTraffic == 3) {
+    setLight(red3, 0);
+    setLight(green3, brightness);
+    countdown(segPins3, 9);
+    setLight(green3, 0);
+  } else if (interruptTraffic == 4) {
+    setLight(red4, 0);
+    setLight(green4, brightness);
+    countdown(segPins4, 9);
+    setLight(green4, 0);
+  }
+
+  // 🟡 Yellow Light for 3 seconds before returning to RED
+  if (interruptTraffic == 1) {
+    setLight(yellow1, brightness);
+    countdown(segPins1, 3);
+    setLight(yellow1, 0);
+  } else if (interruptTraffic == 2) {
+    setLight(yellow2, brightness);
+    countdown(segPins2, 3);
+    setLight(yellow2, 0);
+  } else if (interruptTraffic == 3) {
+    setLight(yellow3, brightness);
+    countdown(segPins3, 3);
+    setLight(yellow3, 0);
+  } else if (interruptTraffic == 4) {
+    setLight(yellow4, brightness);
+    countdown(segPins4, 3);
+    setLight(yellow4, 0);
+  }
+
+  // 🔴 Return all lights to RED before resuming normal operation
+  setAllLightsRed();
+  currentState = RED;
+  interruptFlag = false; // Reset interrupt flag
+}
+
+
+/************************************* Run Traffic Light Sequence ****************************************/
+void runTrafficLight() {
+  static unsigned long lastUpdate = 0;
+  static int countdownValue = 9;
+
+  // Non-blocking traffic light control
+  if (millis() - lastUpdate >= interval) {
+    lastUpdate = millis();
+
+    switch (currentState) {
+      case RED:
+        updateBrightness();
+        // 🔴 Red light countdown
+        setAllLightsRed();
+        if (currentTraffic == 1) {
+          setLight(red1, brightness);
+          displayNumber(segPins1, countdownValue);
+        } else if (currentTraffic == 2) {
+          setLight(red2, brightness);
+          displayNumber(segPins2, countdownValue);
+        } else if (currentTraffic == 3) {
+          setLight(red3, brightness);
+          displayNumber(segPins3, countdownValue);
+        } else if (currentTraffic == 4) {
+          setLight(red4, brightness);
+          displayNumber(segPins4, countdownValue);
+        }
+        countdownValue--;
+
+        if (countdownValue < 0) {
+          currentState = GREEN;
+          countdownValue = 9;
+        }
+        break;
+case GREEN:
+        updateBrightness();
+        // 🟢 Green light countdown
+        if (currentTraffic == 1) {
+          setLight(red1, 0);
+          setLight(green1, brightness);
+          displayNumber(segPins1, countdownValue);
+        } else if (currentTraffic == 2) {
+          setLight(red2, 0);
+          setLight(green2, brightness);
+          displayNumber(segPins2, countdownValue);
+        } else if (currentTraffic == 3) {
+          setLight(red3, 0);
+          setLight(green3, brightness);
+          displayNumber(segPins3, countdownValue);
+        } else if (currentTraffic == 4) {
+          setLight(red4, 0);
+          setLight(green4, brightness);
+          displayNumber(segPins4, countdownValue);
+        }
+        countdownValue--;
+
+        if (countdownValue < 0) {
+          currentState = YELLOW;
+          countdownValue = 3;
+        }
+        break;
+
+      case YELLOW:
+        updateBrightness();
+        // 🟡 Yellow light countdown
+        if (currentTraffic == 1) {
+          setLight(red1, 0);
+          setLight(green1, 0);
+          setLight(yellow1, brightness);
+          displayNumber(segPins1, countdownValue);
+        } else if (currentTraffic == 2) {
+          setLight(red2, 0);
+          setLight(green2, 0);
+          setLight(yellow2, brightness);
+          displayNumber(segPins2, countdownValue);
+        } else if (currentTraffic == 3) {
+          setLight(red3, 0);
+          setLight(green3, 0);
+          setLight(yellow3, brightness);
+          displayNumber(segPins3, countdownValue);
+        } else if (currentTraffic == 4) {
+          setLight(red4, 0);
+          setLight(green4, 0);
+          setLight(yellow4, brightness);
+          displayNumber(segPins4, countdownValue);
+        }
+        countdownValue--;
+
+        if (countdownValue < 0) {
+          currentState = RED;
+          countdownValue = 9;
+          currentTraffic = (currentTraffic % 4) + 1; // Move to next traffic light
+        }
+        break;
+    }
+  }
+}
+
+/************************************* Helper Functions ****************************************/
+void setAllLightsRed() {
+  setLight(red1, brightness);
+  setLight(red2, brightness);
+  setLight(red3, brightness);
+  setLight(red4, brightness);
+  setLight(yellow1, 0);
+  setLight(yellow2, 0);
+  setLight(yellow3, 0);
+  setLight(yellow4, 0);
+  setLight(green1, 0);
+  setLight(green2, 0);
+  setLight(green3, 0);
+  setLight(green4, 0);
+}
+
+void setLight(int pin, int bright) {
+  analogWrite(pin, bright);
+}
+
+void countdown(const int *segPins, int seconds) {
+  for (int i = seconds; i >= 0; i--) {
+    displayNumber(segPins, i);
+    unsigned long currentMillis = millis();
+    while (millis() - currentMillis < 1000) {
+      int ldrValue = analogRead(ldrPin);
+      Serial.print("LDR Value: ");
+      Serial.println(ldrValue);
+      Serial.print("Brightness: ");
+      Serial.println(brightness);
+    }
+  }
+}
+
+void displayNumber(const int *segPins, int num) {
+  byte segments = numbers[num];
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(segPins[i], bitRead(segments, i) ? HIGH : LOW);
+  }
+}
+
+void updateBrightness() {
+  int ldrValue = analogRead(ldrPin);
+  brightness = map(ldrValue, 0, 1023, 50, 255);
+  Serial.print("LDR Value: ");
+  Serial.println(ldrValue);
+  Serial.print("Brightness: ");
+  Serial.println(brightness);
+}
