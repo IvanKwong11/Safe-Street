@@ -1,37 +1,65 @@
-**RoadSafe: AI-Powered Smart Traffic Monitoring and Control**
+# 🚦 RoadSafe: AI-Powered Smart Traffic Monitoring and Control  
 
-**Overview:**
+## 📌 Overview  
+**RoadSafe** is an intelligent traffic monitoring system designed to enhance **road safety** by integrating **AI, IoT, and smart traffic control**. The system uses **AI-powered traffic cameras** and **smart traffic lights** to detect **red-light violations, accidents, and real-time traffic conditions**, ensuring safer and more efficient roads.  
 
-"RoadSafe" is an intelligent traffic monitoring system designed to enhance road safety by integrating AI, IoT, and smart traffic control. The system leverages AI-powered traffic cameras and smart traffic lights to detect red-light violations, accidents, and real-time traffic conditions, ensuring safer and more efficient roads.
+## 🎯 Features  
 
-**Key Features:**
+✅ **AI-Based Traffic Monitoring**  
+   - Detects red-light violations and captures license plates using **OCR (Optical Character Recognition)**.  
+   - Automatically issues alerts for traffic infractions.  
 
-✅ AI-Based Traffic Monitoring – Detects red-light violations, captures license plates using OCR (Optical Character Recognition), and automatically issues alerts for traffic infractions.
-✅ Real-Time Accident Detection – Identifies collisions at intersections and instantly notifies traffic authorities for swift emergency response.
-✅ Smart Traffic Light System – A crossroad traffic control system built with an Arduino Mega and ESP8266, featuring:
+✅ **Real-Time Accident Detection**  
+   - Identifies collisions at intersections.  
+   - Sends **instant alerts** to traffic authorities for emergency response.  
 
-Four traffic lights operating on a fixed sequence (Red: 9s, Yellow: 3s, Green: 9s).
+✅ **Smart Traffic Light System (Arduino Mega + ESP8266)**  
+   - **Four traffic lights** following a structured cycle:  
+     - 🔴 Red: **9 seconds**  
+     - 🟡 Yellow: **3 seconds**  
+     - 🟢 Green: **9 seconds**  
+   - **LDR Sensor-Based LED Brightness Control**  
+     - Uses **PWM** to dynamically adjust brightness based on ambient light conditions.  
+   - **Manual Override via Web Interface**  
+     - Allows emergency personnel to **remotely change signals** in critical situations.  
 
-Dynamic LED brightness adjustment via an LDR sensor using PWM for optimal visibility in different lighting conditions.
+## 🛠️ Hardware & Software Components  
 
-Manual override via a web interface for emergency situations, allowing immediate light changes when required.
+### **Hardware**  
+- 🔹 **ESP8266** (WiFi Module)  
+- 🔹 **Arduino Mega** (Main Controller)  
+- 🔹 **LDR Sensor** (For ambient light detection)  
+- 🔹 **Seven-Segment Displays** (For countdown timers)  
+- 🔹 **Traffic Light LEDs**  
 
-**How It Works:**
+### **Software & Technologies**  
+- 💻 **C++ (Arduino IDE)**
+- 🌐 **ESPAsyncWebServer** (Web-based traffic control)
+- 🧠 **OpenCV & OCR (AI-based detection)**
+- 🔗 **WiFi Communication (ESP8266 & Arduino Mega)**  
 
-Automated Traffic Control – The traffic lights follow a structured cycle while adapting to ambient light conditions.
+## 🎬 How It Works  
 
-Manual Signal Override – Operators can control signals remotely via a web interface to prioritize emergency vehicles.
+1️⃣ **Traffic Light Automation**: The system follows a structured sequence while adapting to ambient light conditions.  
+2️⃣ **Manual Override**: Pressing `T1` forces the corresponding light to **turn green immediately** if it was red.  
+3️⃣ **Adaptive Transition**: Pressing `T4` shifts from green → yellow (3s) → red → next light turns green.  
+4️⃣ **AI Monitoring**: A webcam detects red-light violations and captures **license plate information** for enforcement.  
+5️⃣ **Accident Alerts**: AI detects accidents and **notifies traffic authorities** for faster emergency response.  
 
-AI-Powered Violation Detection – A simulated traffic monitoring system using a webcam detects vehicles crossing on a red light and extracts their license plate information for enforcement actions.
+## 🔗 Web Interface Demonstration  
 
-Backup Web Interface:
-Due to WiFi restrictions preventing port forwarding, the app currently cannot access the ESP8266 remotely. However, to demonstrate feasibility, the system includes a local web interface for real-time control and monitoring. This ensures the core functionality remains operational while alternative solutions for remote access are explored.
+Since **WiFi restrictions** prevent port forwarding, the app currently **cannot access the ESP8266 remotely**.  
+However, a **backup web interface** allows local real-time control, demonstrating the system’s feasibility.  
 
-**Impact:**
-By integrating AI-driven monitoring with IoT-based traffic control, RoadSafe aims to:
-🚦 Reduce traffic violations through automated enforcement.
-🚑 Enhance emergency response with real-time alerts.
-🔄 Improve traffic flow efficiency with adaptive signal control.
-🌍 Ensure safer roads for all drivers and pedestrians.
 
-This project showcases a scalable, AI-enhanced traffic management system, bridging smart city innovations with real-world safety solutions.
+## 🚀 Installation & Setup  
+
+### **1️⃣ Setting Up the Arduino & ESP8266**  
+1. Install **Arduino IDE** and the required ESP8266 libraries (`ESPAsyncWebServer`, `Ticker`, `WiFi`).  
+2. Flash the **ESP8266 firmware** with the provided `.ino` file.  
+3. Upload the **Arduino Mega code** for traffic light control.  
+
+### **2️⃣ Running the AI-Based Monitoring System**  
+1. Install **Python 3.x** and required packages:  
+   ```sh
+   pip install opencv-python pytesseract flask
