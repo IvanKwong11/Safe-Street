@@ -1,8 +1,10 @@
-**#RoadSafe: AI-Powered Smart Traffic Monitoring and Control**
-Overview:
+**RoadSafe: AI-Powered Smart Traffic Monitoring and Control**
+
+**Overview:**
+
 "RoadSafe" is an intelligent traffic monitoring system designed to enhance road safety by integrating AI, IoT, and smart traffic control. The system leverages AI-powered traffic cameras and smart traffic lights to detect red-light violations, accidents, and real-time traffic conditions, ensuring safer and more efficient roads.
 
-Key Features:
+**Key Features:**
 
 ✅ AI-Based Traffic Monitoring – Detects red-light violations, captures license plates using OCR (Optical Character Recognition), and automatically issues alerts for traffic infractions.
 ✅ Real-Time Accident Detection – Identifies collisions at intersections and instantly notifies traffic authorities for swift emergency response.
@@ -14,7 +16,7 @@ Dynamic LED brightness adjustment via an LDR sensor using PWM for optimal visibi
 
 Manual override via a web interface for emergency situations, allowing immediate light changes when required.
 
-How It Works:
+**How It Works:**
 
 Automated Traffic Control – The traffic lights follow a structured cycle while adapting to ambient light conditions.
 
@@ -25,7 +27,7 @@ AI-Powered Violation Detection – A simulated traffic monitoring system using a
 Backup Web Interface:
 Due to WiFi restrictions preventing port forwarding, the app currently cannot access the ESP8266 remotely. However, to demonstrate feasibility, the system includes a local web interface for real-time control and monitoring. This ensures the core functionality remains operational while alternative solutions for remote access are explored.
 
-Impact:
+**Impact:**
 By integrating AI-driven monitoring with IoT-based traffic control, RoadSafe aims to:
 🚦 Reduce traffic violations through automated enforcement.
 🚑 Enhance emergency response with real-time alerts.
