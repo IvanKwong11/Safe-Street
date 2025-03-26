@@ -1,0 +1,233 @@
+#include <ESP8266WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <Ticker.h>
+
+const char* ssid = "wifiname";
+const char* password = "123456789";
+
+IPAddress local_IP(192, 168, 0, 9);
+IPAddress gateway(192, 168, 0, 1);
+IPAddress subnet(255, 255, 255, 0);
+IPAddress primaryDNS(8, 8, 8, 8);
+IPAddress secondaryDNS(8, 8, 4, 4);
+
+AsyncWebServer server(80);
+Ticker timerT1, timerT2, timerT3, timerT4;
+
+#define LED_T1 D8
+#define LED_T2 D7
+#define LED_T3 D6
+#define LED_T4 D5
+
+void turnOffLED_T1() { digitalWrite(LED_T1, LOW); }
+void turnOffLED_T2() { digitalWrite(LED_T2, LOW); }
+void turnOffLED_T3() { digitalWrite(LED_T3, LOW); }
+void turnOffLED_T4() { digitalWrite(LED_T4, LOW); }
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(LED_T1, OUTPUT);
+    pinMode(LED_T2, OUTPUT);
+    pinMode(LED_T3, OUTPUT);
+    pinMode(LED_T4, OUTPUT);
+    digitalWrite(LED_T1, LOW);
+    digitalWrite(LED_T2, LOW);
+    digitalWrite(LED_T3, LOW);
+    digitalWrite(LED_T4, LOW);
+
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
+        Serial.println("Failed to configure Static IP");
+    }
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    Serial.print("\nConnecting to WiFi...");
+    int attempt = 0;
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.print(".");
+        attempt++;
+        if (attempt > 20) {
+            Serial.println("\nFailed to connect. Restarting...");
+            ESP.restart();
+        }
+    }
+    Serial.println("\nConnected to WiFi!");
+    Serial.print("Local IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/html", R"rawliteral(
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Traffic Light Control</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; }
+                h1 { color: #333; }
+                .frame {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 450px;
+                    height: 450px;
+                    margin: 50px auto;
+                    border: 10px solid black;
+                    background-color: white;
+                }
+                .cross-junction {
+                    position: relative;
+                    width: 450px;
+                    height: 450px;
+                }
+                .road { position: absolute; background: gray; }
+                .horizontal { width: 100%; height: 80px; top: 185px; }
+                .vertical { height: 100%; width: 80px; left: 185px; }
+                
+                .dotted-line {
+                    position: absolute;
+                    width: 40%;
+                    height: 10px;
+                    top: 220px;
+                    left: 0;
+                    background: repeating-linear-gradient(90deg, white, white 10px, transparent 10px, transparent 20px);
+                }
+                .dotted-line.right { left: auto; right: 0; }
+                .dotted-line-vertical {
+                    position: absolute;
+                    height: 40%;
+                    width: 10px;
+                    left: 220px;
+                    top: 0;
+                    background: repeating-linear-gradient(0deg, white, white 10px, transparent 10px, transparent 20px);
+                }
+                .dotted-line-vertical.bottom { top: auto; bottom: 0; }
+
+                .grass {
+                    position: absolute;
+                    width: 185px;
+                    height: 185px;
+                    background: linear-gradient(to bottom right, #228B22, #006400);
+                }
+                .top-left { top: 0; left: 0; }
+                .top-right { top: 0; right: 0; }
+                .bottom-left { bottom: 0; left: 0; }
+                .bottom-right { bottom: 0; right: 0; }
+
+                .traffic-light {
+                    width: 35px;
+                    height: 90px;
+                    background: black;
+                    border: 2px solid black;
+                    border-radius: 10px;
+                    padding: 5px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    align-items: center;
+                    position: absolute;
+                    transition: border 0.3s ease-in-out;
+                }
+                .light { width: 25px; height: 25px; border-radius: 50%; }
+                .red { background: red; }
+                .yellow { background: yellow; }
+                .green { background: green; }
+                .button { margin-top: 3px; padding: 5px 10px; font-size: 12px; border: none; background-color: #007BFF; color: white; border-radius: 5px; cursor: pointer; }
+                .button:hover { background-color: #0056b3; }
+                
+                #T1 { top: 75px; left: 270px; transform: rotate(180deg); }
+                #T2 { top: 100px; left: 100px; transform: rotate(90deg); }
+                #T3 { top: 270px; left: 130px; transform: rotate(0deg); }
+                #T4 { top: 240px; left: 295px; transform: rotate(270deg); }
+            </style>
+            <script>
+                function toggleLED(lightID) {
+                    fetch(`/led?pin=${lightID}`)
+                        .then(response => response.text())
+                        .then(data => {
+                            if (data === "OK") {
+                                let light = document.getElementById(lightID);
+                                light.style.border = "5px solid white"; 
+
+                                setTimeout(() => {
+                                    light.style.border = "2px solid black"; 
+                                }, 10000);
+                            }
+                        });
+                }
+            </script>
+        </head>
+        <body>
+            <h1>Cross-Junction Traffic Light Control</h1>
+            <div class="frame">
+                <div class="cross-junction">
+                    <div class="grass top-left"></div>
+                    <div class="grass top-right"></div>
+                    <div class="grass bottom-left"></div>
+                    <div class="grass bottom-right"></div>
+                    <div class="road horizontal"></div>
+                    <div class="road vertical"></div>
+                    <div class="dotted-line"></div>
+                    <div class="dotted-line right"></div>
+                    <div class="dotted-line-vertical"></div>
+                    <div class="dotted-line-vertical bottom"></div>
+
+                    <div class="traffic-light" id="T1">
+                        <div class="light red"></div>
+                        <div class="light yellow"></div>
+                        <div class="light green"></div>
+                        <button class="button" onclick="toggleLED('T1')">T1</button>
+                    </div>
+                    <div class="traffic-light" id="T2">
+                        <div class="light red"></div>
+                        <div class="light yellow"></div>
+                        <div class="light green"></div>
+                        <button class="button" onclick="toggleLED('T2')">T2</button>
+                    </div>
+                    <div class="traffic-light" id="T3">
+                        <div class="light red"></div>
+                        <div class="light yellow"></div>
+                        <div class="light green"></div>
+                        <button class="button" onclick="toggleLED('T3')">T3</button>
+                    </div>
+                    <div class="traffic-light" id="T4">
+                        <div class="light red"></div>
+                        <div class="light yellow"></div>
+                        <div class="light green"></div>
+                        <button class="button" onclick="toggleLED('T4')">T4</button>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        )rawliteral");
+    });
+
+    server.on("/led", HTTP_GET, [](AsyncWebServerRequest *request){
+        if (request->hasParam("pin")) {
+            String pin = request->getParam("pin")->value();
+            if (pin == "T1") {
+                digitalWrite(LED_T1, HIGH);
+                timerT1.once(10, turnOffLED_T1);
+            } else if (pin == "T2") {
+                digitalWrite(LED_T2, HIGH);
+                timerT2.once(10, turnOffLED_T2);
+            } else if (pin == "T3") {
+                digitalWrite(LED_T3, HIGH);
+                timerT3.once(10, turnOffLED_T3);
+            } else if (pin == "T4") {
+                digitalWrite(LED_T4, HIGH);
+                timerT4.once(10, turnOffLED_T4);
+            }
+            request->send(200, "text/plain", "OK");
+        } else {
+            request->send(400, "text/plain", "Missing pin parameter");
+        }
+    });
+
+    server.begin();
+}
+
+void loop() {
+    // Handled asynchronously
+}
